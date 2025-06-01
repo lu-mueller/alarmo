@@ -277,6 +277,15 @@ class AutomationHandler:
 
         entity = self.hass.states.get(entity_id)
 
+        area_name = None
+        sensors = self.hass.data[const.DOMAIN]["coordinator"].store.async_get_sensors()
+        sensor_cfg = sensors.get(entity_id)
+        if sensor_cfg and getattr(sensor_cfg, "area", None):
+            areas = self.hass.data[const.DOMAIN]["coordinator"].store.async_get_areas()
+            area_id = getattr(sensor_cfg, "area", None)
+            if area_id and area_id in areas:
+                area_name = areas[area_id].name
+
         device_type = entity.attributes["device_class"] if entity and "device_class" in entity.attributes else None
 
         if state == STATE_OPEN:
@@ -298,11 +307,12 @@ class AutomationHandler:
 
         elif state == STATE_UNAVAILABLE:
             string = "{entity_name} is unavailable"
-
         else:
             string = "{entity_name} is unknown"
 
         name = friendly_name_for_entity_id(entity_id, self.hass)
+        if area_name:
+            name = f"{name} ({area_name})"
         string = string.replace("{entity_name}", name)
 
         return string
